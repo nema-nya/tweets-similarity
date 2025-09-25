@@ -6,9 +6,6 @@ import os
 
 app = Flask(__name__)
 
-CACHE_DIR = "cache"
-LSH_CACHE_PATH = os.path.join(CACHE_DIR, "lsh.pkl")
-MINHASH_CACHE_PATH = os.path.join(CACHE_DIR, "minhash.pkl")
 DATA_PATH = "tweets.csv"
 
 minhash = None
