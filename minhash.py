@@ -19,6 +19,7 @@ class MinHash:
 
     def clean_text(self, text):
         text = text.lower()
+        text = re.sub(r"http\S+|www\S+|https\S+", "", text)
         text = re.sub(r"@\w+|#\w+", "", text)
         text = re.sub(r"\s+", " ", text)
         text = text.strip()
