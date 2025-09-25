@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tweets similarity</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Zen+Old+Mincho&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <div class="main-content">
+        <div class="section">
+            <h2 id="title">Search similar tweets</h2>
+            <div class="search-container">
+                <div class="search-form">
+                    <div class="form-group search-input">
+                        <input type="text" id="searchQuery" placeholder="hmm what do i want to find..." autofocus>
+                    </div>
+
+                    <div class="search-controls">
+                        <div class="form-group">
+                            <label for="minSimilarity">minimum similarity:</label>
+                            <select id="minSimilarity">
+                                <option value="0.1">10%</option>
+                                <option value="0.3">30%</option>
+                                <option value="0.5">50%</option>
+                                <option value="0.7" selected>70%</option>
+                                <option value="0.9">90%</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="maxResults">maximum number of results:</label>
+                            <select id="maxResults">
+                                <option value="5">5</option>
+                                <option value="10" selected>10</option>
+                                <option value="20">20</option>
+                                <option value="50">50</option>
+                            </select>
+                        </div>
+
+                        <div class="search-button">
+                            <button type="button" class="btn" id="searchBtn">Search</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="resultsSection" class="section">
+            <div id="resultsContent"></div>
+        </div>
+    </div>
+    </div>
+
+    <script>
+        const searchBtn = document.getElementById("searchBtn");
+        const searchQuery = document.getElementById("searchQuery");
+        const resultsContent = document.getElementById("resultsContent");
+
+        searchBtn.addEventListener("click", performSearch);
+
+        async function performSearch() {
+            const query = searchQuery.value.trim();
+            if (!query) {
+                resultsContent.innerHTML = "<div class='error'>Please enter a search query.</div>";
+                return;
+            }
+
+            const minSimilarity = document.getElementById("minSimilarity").value;
+            const maxResults = document.getElementById("maxResults").value;
+
+            searchBtn.disabled = true;
+            searchBtn.textContent = "Searching...";
+
+            resultsContent.innerHTML = `
+                <div class="loading">
+                    <p>Searching for similar tweets...</p>
+                </div>
+            `;
+
+            try {
+                const response = await fetch("/api/search", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        query: query,
+                        min_similarity: parseFloat(minSimilarity),
+                        max_results: parseInt(maxResults)
+                    })
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    displayResults(result);
+                } else {
+                    resultsContent.innerHTML = `<div class="error">${result.error}</div>`;
+                }
+            } catch (error) {
+                resultsContent.innerHTML = `<div class="error">Search failed: ${error.message}</div>`;
+            } finally {
+                searchBtn.disabled = false;
+                searchBtn.textContent = "Search";
+            }
+        }
+
+        function displayResults(result) {
+            if (result.results.length === 0) {
+                resultsContent.innerHTML = `
+                    <div class="no-results">
+                        <h3>No similar tweets found</h3>
+                        <p>Try lowering the similarity threshold or using different keywords.</p>
+                        <p><strong>Query:</strong> "${result.query}"</p>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = `
+                <div class="results-header">
+                    <p>Found <strong>${result.total_found}</strong> similar tweets, showing top <strong>${result.showing}</strong></p>
+                </div>
+                <div class="results-list">
+            `;
+
+            result.results.forEach((item, index) => {
+                const similarity = item.similarity;
+                let similarityClass = "similarity-low";
+                if (similarity >= 0.7) similarityClass = "similarity-high";
+                else if (similarity >= 0.4) similarityClass = "similarity-medium";
+
+                html += `
+                    <div class="result-item ${similarityClass}">
+                        <div class="result-similarity ${similarityClass}">
+                            ${(similarity * 100).toFixed(1)}% similarity
+                        </div>
+                        <div class="tweet-text">"${item.tweet}"</div>
+                        <div class="tweet-meta">
+                            <span>Tweet #${item.index}</span>
+                            <span>Rank: ${index + 1}</span>
+                        </div>
+                    </div>
+                `;
+            });
+
+            html += "</div>";
+            resultsContent.innerHTML = html;
+        }
+    </script>
+</body>
+
+</html>
