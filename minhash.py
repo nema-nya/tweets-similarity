@@ -6,14 +6,14 @@ class MinHash:
     def __init__(self, num_hashes=128, shingle_size=2):
         self.num_hashes = num_hashes
         self.shingle_size = shingle_size
-        self.prime = 4294967311
+        self.modulus = 2**32
         self.hash_functions = self.generate_hash_functions()
 
     def generate_hash_functions(self):
         hash_functions = []
         for _ in range(self.num_hashes):
-            a = random.randint(1, self.prime - 1)
-            b = random.randint(0, self.prime - 1)
+            a = 4 * random.randint(0, (self.modulus // 4) - 1) + 1
+            b = 2 * random.randint(0, (self.modulus // 2) - 1) + 1
             hash_functions.append((a, b))
         return hash_functions
 
@@ -38,8 +38,8 @@ class MinHash:
         return shingles
 
     def apply_hash(self, a, b, shingle):
-        shingle_hash = hash(shingle) % self.prime
-        return (a * shingle_hash + b) % self.prime
+        shingle_hash = hash(shingle) % self.modulus
+        return (a * shingle_hash + b) % self.modulus
 
     def compute_signature(self, text):
         shingles = self.get_shingles(text)
