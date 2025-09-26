@@ -2,6 +2,8 @@ body {
     background-color: #C0C0C0;
     font-family: "Times New Roman", serif;
     color: #000;
+    background: url("../static/windowsxp.webp");
+    background-size: cover;
 }
 
 .main-content {
